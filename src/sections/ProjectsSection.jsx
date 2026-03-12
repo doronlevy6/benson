@@ -17,6 +17,8 @@ const statusVisual = {
   not_started: {
     label: 'לא התחילו',
     chipColor: 'default',
+    chipBg: 'rgba(148, 163, 184, 0.2)',
+    chipBorder: 'rgba(100, 116, 139, 0.45)',
     buttonBg: 'rgba(148, 163, 184, 0.2)',
     buttonBorder: 'rgba(100, 116, 139, 0.45)',
     buttonColor: '#334155',
@@ -421,7 +423,16 @@ function ProjectsSection() {
                           size="small"
                           label={statusById[statusId] || statusVisual.not_started.label}
                           color={statusVisual[statusId]?.chipColor || 'default'}
-                          variant={statusId === 'not_started' ? 'outlined' : 'filled'}
+                          variant="filled"
+                          sx={
+                            statusId === 'not_started'
+                              ? {
+                                  backgroundColor: statusVisual.not_started.chipBg,
+                                  border: `1px solid ${statusVisual.not_started.chipBorder}`,
+                                  color: statusVisual.not_started.buttonColor,
+                                }
+                              : undefined
+                          }
                         />
                       </Stack>
 
