@@ -34,7 +34,12 @@ npm run dev
 
 ## 4. Data contract
 
-Each row in sheet `Tracker` is:
+The endpoint uses POST JSON actions:
+
+- `{ "action": "list" }` -> returns `{ "records": [...] }`
+- `{ "action": "upsert", ...record }` -> returns `{ "ok": true }`
+
+Each row in sheet `Tracker`:
 
 - `buildingId`
 - `apartmentId`

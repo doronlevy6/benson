@@ -71,30 +71,58 @@ function normalizePayload(payload) {
 }
 
 function readApiResponse(data) {
+  if (!data || !Array.isArray(data.records)) {
+    throw new Error('Google Sheets response does not include records array.')
+  }
+
   const records = sanitizeRecords(data?.records)
   return mergeWithSeed(records)
 }
 
 async function fetchFromSheets() {
-  const response = await fetch(`${SHEETS_ENDPOINT}?action=list`)
+  const response = await fetch(SHEETS_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action: 'list' }),
+  })
 
   if (!response.ok) {
     throw new Error('Failed to read from Google Sheets endpoint.')
   }
 
-  const data = await response.json()
+  let data = null
+
+  try {
+    data = await response.json()
+  } catch {
+    throw new Error('Invalid JSON response from Google Sheets endpoint.')
+  }
+
   return readApiResponse(data)
 }
 
 async function upsertToSheets(record) {
   const response = await fetch(SHEETS_ENDPOINT, {
     method: 'POST',
-    mode: 'no-cors',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ action: 'upsert', ...record }),
   })
 
-  if (response.type !== 'opaque' && !response.ok) {
+  if (!response.ok) {
     throw new Error('Failed to write to Google Sheets endpoint.')
+  }
+
+  try {
+    const data = await response.json()
+    if (data && Object.prototype.hasOwnProperty.call(data, 'ok') && data.ok !== true) {
+      throw new Error('Google Sheets endpoint returned ok=false.')
+    }
+  } catch {
+    // Some Apps Script deployments return non-JSON; HTTP 200 is still treated as success.
   }
 }
 

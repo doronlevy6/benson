@@ -2,28 +2,14 @@ const SHEET_NAME = 'Tracker'
 const HEADERS = ['buildingId', 'apartmentId', 'tradeId', 'status', 'updatedAt']
 const SPREADSHEET_ID = 'PASTE_SPREADSHEET_ID_HERE'
 
-function doGet() {
-  const sheet = getOrCreateSheet_()
-  const values = sheet.getDataRange().getValues()
-
-  if (values.length <= 1) {
-    return jsonResponse_({ records: [] })
-  }
-
-  const records = values.slice(1).map((row) => ({
-    buildingId: row[0],
-    apartmentId: row[1],
-    tradeId: row[2],
-    status: row[3],
-    updatedAt: row[4],
-  }))
-
-  return jsonResponse_({ records })
-}
-
 function doPost(e) {
   const sheet = getOrCreateSheet_()
   const payload = JSON.parse(e.postData.contents || '{}')
+  const action = (payload.action || '').toString()
+
+  if (action === 'list') {
+    return jsonResponse_({ records: readRecords_(sheet) })
+  }
 
   const rowKey = `${payload.buildingId}::${payload.apartmentId}::${payload.tradeId}`
   const values = sheet.getDataRange().getValues()
@@ -53,6 +39,22 @@ function doPost(e) {
   }
 
   return jsonResponse_({ ok: true })
+}
+
+function readRecords_(sheet) {
+  const values = sheet.getDataRange().getValues()
+
+  if (values.length <= 1) {
+    return []
+  }
+
+  return values.slice(1).map((row) => ({
+    buildingId: row[0],
+    apartmentId: row[1],
+    tradeId: row[2],
+    status: row[3],
+    updatedAt: row[4],
+  }))
 }
 
 function getOrCreateSheet_() {
