@@ -121,9 +121,8 @@ function readApiResponse(data) {
 async function fetchFromSheets() {
   const response = await fetch(SHEETS_ENDPOINT, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    // Use a simple content type to avoid cross-origin preflight issues with Apps Script.
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action: 'list' }),
   })
 
@@ -154,9 +153,8 @@ async function upsertToSheets(record) {
 
   const response = await fetch(SHEETS_ENDPOINT, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    // Use a simple content type to keep the request preflight-free in browsers.
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(sheetPayload),
   })
 
