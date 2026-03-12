@@ -33,29 +33,18 @@ function readLocalRecords() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seedRecords))
-      return seedRecords
+      return []
     }
 
     const parsed = JSON.parse(raw)
     return sanitizeRecords(parsed)
   } catch {
-    return seedRecords
+    return []
   }
 }
 
 function writeLocalRecords(records) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
-}
-
-function mergeWithSeed(records) {
-  const recordMap = new Map(seedRecords.map((record) => [toRecordKey(record), record]))
-
-  records.forEach((record) => {
-    recordMap.set(toRecordKey(record), record)
-  })
-
-  return Array.from(recordMap.values())
 }
 
 function normalizePayload(payload) {
@@ -75,8 +64,7 @@ function readApiResponse(data) {
     throw new Error('Google Sheets response does not include records array.')
   }
 
-  const records = sanitizeRecords(data?.records)
-  return mergeWithSeed(records)
+  return sanitizeRecords(data.records)
 }
 
 async function fetchFromSheets() {
@@ -127,11 +115,11 @@ async function upsertToSheets(record) {
 }
 
 export async function fetchTrackerData() {
-  const localRecords = mergeWithSeed(readLocalRecords())
+  const localRecords = readLocalRecords()
 
   if (!SHEETS_ENDPOINT) {
     return {
-      records: localRecords,
+      records: localRecords.length ? localRecords : seedRecords,
       source: 'local-storage',
       buildings: buildingOptions,
       trades: tradeOptions,
@@ -152,7 +140,7 @@ export async function fetchTrackerData() {
     }
   } catch {
     return {
-      records: localRecords,
+      records: localRecords.length ? localRecords : seedRecords,
       source: 'local-storage-fallback',
       buildings: buildingOptions,
       trades: tradeOptions,
@@ -166,7 +154,7 @@ export async function updateTrackerStatus(payload) {
   const currentRecords = readLocalRecords()
   const recordKey = toRecordKey(nextRecord)
 
-  const nextRecords = mergeWithSeed([
+  const nextRecords = sanitizeRecords([
     ...currentRecords.filter((record) => toRecordKey(record) !== recordKey),
     nextRecord,
   ])
