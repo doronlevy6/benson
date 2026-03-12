@@ -5,36 +5,34 @@ export const statusOptions = [
 ]
 
 export const tradeOptions = [
+  { id: 'electrical', label: 'חשמל' },
+  { id: 'plumbing', label: 'אינסטלציה' },
   { id: 'plaster', label: 'טייח' },
   { id: 'rebar', label: 'ברזל' },
-  { id: 'plumbing', label: 'אינסטלציה' },
-  { id: 'electrical', label: 'חשמל' },
   { id: 'painting', label: 'צבע' },
   { id: 'aluminum', label: 'אלומיניום' },
+  { id: 'flooring', label: 'ריצוף' },
+  { id: 'drywall', label: 'גבס' },
+  { id: 'waterproofing', label: 'איטום' },
+  { id: 'carpentry', label: 'נגרות' },
 ]
 
-export const buildingOptions = [
-  {
-    id: 'benson-heights-a',
-    name: 'Benson Heights A',
-    apartments: ['A101', 'A102', 'A103', 'A104', 'A105'],
-  },
-  {
-    id: 'benson-heights-b',
-    name: 'Benson Heights B',
-    apartments: ['B101', 'B102', 'B103', 'B104', 'B105'],
-  },
-  {
-    id: 'oak-tower',
-    name: 'Oak Tower',
-    apartments: ['201', '202', '203', '204'],
-  },
-]
+const apartmentTemplate = ['A1', 'A2', 'A3', 'A4', 'A5']
+
+export const buildingOptions = Array.from({ length: 5 }, (_, index) => {
+  const buildingNumber = String(index + 1).padStart(2, '0')
+
+  return {
+    id: `building-${buildingNumber}`,
+    name: `בניין ${buildingNumber}`,
+    apartments: apartmentTemplate,
+  }
+})
 
 const statusPattern = ['not_started', 'in_progress', 'completed']
 
 function getSeedStatus(buildingIndex, apartmentIndex, tradeIndex) {
-  const statusIndex = (buildingIndex + apartmentIndex + tradeIndex) % statusPattern.length
+  const statusIndex = (buildingIndex * 3 + apartmentIndex * 2 + tradeIndex) % statusPattern.length
   return statusPattern[statusIndex]
 }
 
@@ -54,7 +52,7 @@ export function createSeedRecords() {
           apartmentId,
           tradeId: trade.id,
           status: getSeedStatus(buildingIndex, apartmentIndex, tradeIndex),
-          updatedAt: toUpdatedAt((buildingIndex + apartmentIndex + tradeIndex) % 5),
+          updatedAt: toUpdatedAt((buildingIndex + apartmentIndex + tradeIndex) % 7),
         })
       })
     })
@@ -64,3 +62,10 @@ export function createSeedRecords() {
 }
 
 export const seedRecords = createSeedRecords()
+
+export const demoMatrixSize = {
+  buildings: buildingOptions.length,
+  apartmentsPerBuilding: apartmentTemplate.length,
+  trades: tradeOptions.length,
+  records: seedRecords.length,
+}

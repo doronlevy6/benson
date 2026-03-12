@@ -5,7 +5,7 @@ import {
   tradeOptions,
 } from '../data/projectTrackerData'
 
-const STORAGE_KEY = 'benson-project-tracker-v1'
+const STORAGE_KEY = 'benson-project-tracker-v3'
 const SHEETS_ENDPOINT = import.meta.env.VITE_SHEETS_API_URL?.trim() || ''
 const validStatuses = new Set(statusOptions.map((status) => status.id))
 
