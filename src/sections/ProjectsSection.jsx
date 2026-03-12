@@ -16,23 +16,21 @@ import { fetchTrackerData, updateTrackerStatus } from '../services/projectStatus
 const statusVisual = {
   not_started: {
     label: 'לא התחילו',
-    chipColor: 'default',
-    chipBg: 'rgba(148, 163, 184, 0.2)',
-    chipBorder: 'rgba(100, 116, 139, 0.45)',
+    chipSelectedBg: 'grey.500',
     buttonBg: 'rgba(148, 163, 184, 0.2)',
     buttonBorder: 'rgba(100, 116, 139, 0.45)',
     buttonColor: '#334155',
   },
   in_progress: {
     label: 'בתהליך',
-    chipColor: 'warning',
+    chipSelectedBg: 'warning.main',
     buttonBg: 'rgba(245, 158, 11, 0.2)',
     buttonBorder: 'rgba(217, 119, 6, 0.45)',
     buttonColor: '#78350f',
   },
   completed: {
     label: 'סיימו',
-    chipColor: 'success',
+    chipSelectedBg: 'success.main',
     buttonBg: 'rgba(22, 163, 74, 0.2)',
     buttonBorder: 'rgba(21, 128, 61, 0.45)',
     buttonColor: '#14532d',
@@ -422,17 +420,15 @@ function ProjectsSection() {
                         <Chip
                           size="small"
                           label={statusById[statusId] || statusVisual.not_started.label}
-                          color={statusVisual[statusId]?.chipColor || 'default'}
                           variant="filled"
-                          sx={
-                            statusId === 'not_started'
-                              ? {
-                                  backgroundColor: statusVisual.not_started.chipBg,
-                                  border: `1px solid ${statusVisual.not_started.chipBorder}`,
-                                  color: statusVisual.not_started.buttonColor,
-                                }
-                              : undefined
-                          }
+                          sx={{
+                            backgroundColor:
+                              statusVisual[statusId]?.chipSelectedBg ||
+                              statusVisual.not_started.chipSelectedBg,
+                            color: '#ffffff',
+                            fontWeight: 700,
+                            border: 'none',
+                          }}
                         />
                       </Stack>
 
