@@ -89,13 +89,11 @@ async function fetchFromSheets() {
 async function upsertToSheets(record) {
   const response = await fetch(SHEETS_ENDPOINT, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    mode: 'no-cors',
     body: JSON.stringify({ action: 'upsert', ...record }),
   })
 
-  if (!response.ok) {
+  if (response.type !== 'opaque' && !response.ok) {
     throw new Error('Failed to write to Google Sheets endpoint.')
   }
 }

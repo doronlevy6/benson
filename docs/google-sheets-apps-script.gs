@@ -1,5 +1,6 @@
 const SHEET_NAME = 'Tracker'
 const HEADERS = ['buildingId', 'apartmentId', 'tradeId', 'status', 'updatedAt']
+const SPREADSHEET_ID = 'PASTE_SPREADSHEET_ID_HERE'
 
 function doGet() {
   const sheet = getOrCreateSheet_()
@@ -55,7 +56,11 @@ function doPost(e) {
 }
 
 function getOrCreateSheet_() {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet()
+  if (!SPREADSHEET_ID || SPREADSHEET_ID === 'PASTE_SPREADSHEET_ID_HERE') {
+    throw new Error('Set SPREADSHEET_ID before deployment.')
+  }
+
+  const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID)
   let sheet = spreadsheet.getSheetByName(SHEET_NAME)
 
   if (!sheet) {

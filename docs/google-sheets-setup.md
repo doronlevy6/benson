@@ -5,9 +5,10 @@ The `Projects` tab can read/write statuses to a Google Sheet through a Google Ap
 ## 1. Create a new Google Sheet
 
 1. Create a spreadsheet and name it **Benson**.
-2. Open `Extensions -> Apps Script`.
-3. Replace the script with the code from:
-   - `docs/google-sheets-apps-script.gs`
+2. Copy the spreadsheet ID from the URL `https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit`.
+3. Open `Extensions -> Apps Script`.
+4. Replace the script with the code from `docs/google-sheets-apps-script.gs`.
+5. In the script, set `SPREADSHEET_ID` to your real sheet ID.
 
 ## 2. Deploy Apps Script as Web App
 
