@@ -11,7 +11,6 @@ import {
 } from '@mui/material'
 import SectionWrapper from '../components/layout/SectionWrapper'
 import SectionTitle from '../components/ui/SectionTitle'
-import { demoMatrixSize } from '../data/projectTrackerData'
 import { fetchTrackerData, updateTrackerStatus } from '../services/projectStatusService'
 
 const statusVisual = {
@@ -64,14 +63,14 @@ function formatDateTime(isoString) {
 
 function getSourceLabel(source) {
   if (source === 'google-sheets') {
-    return 'מקור נתונים: גיליון'
+    return 'מקור נתונים: גיליון אמת'
   }
 
   if (source === 'local-storage-fallback') {
-    return 'מקור נתונים: מקומי זמני'
+    return 'מקור נתונים: גיבוי מקומי זמני'
   }
 
-  return 'מקור נתונים: דמו מקומי'
+  return 'מקור נתונים: מקומי בלבד'
 }
 
 function getSourceColor(source) {
@@ -114,9 +113,9 @@ function ProjectsSection() {
         if (data.source === 'google-sheets') {
           setSyncInfo('המערכת מסונכרנת לגיליון')
         } else if (data.source === 'local-storage-fallback') {
-          setSyncInfo('הגיליון לא זמין כרגע, עובדים מקומית')
+          setSyncInfo('הגיליון לא זמין כרגע, עובדים על גיבוי מקומי זמני')
         } else {
-          setSyncInfo('מצב דמו מקומי פעיל')
+          setSyncInfo('אין קישור לגיליון, עובדים מקומית בלבד')
         }
       } catch {
         setLoadError('לא הצלחנו לטעון נתוני מעקב כרגע')
@@ -219,10 +218,10 @@ function ProjectsSection() {
       setSyncInfo('העדכון נשמר בגיליון')
       setSource(result.source)
     } else if (result.source === 'local-storage-fallback') {
-      setSyncInfo('העדכון נשמר מקומית עד שהגיליון יחזור')
+      setSyncInfo('העדכון נשמר בגיבוי מקומי עד שהחיבור לגיליון יחזור')
       setSource(result.source)
     } else {
-      setSyncInfo('העדכון נשמר במצב דמו מקומי')
+      setSyncInfo('העדכון נשמר מקומית בלבד')
       setSource(result.source)
     }
 
@@ -259,7 +258,7 @@ function ProjectsSection() {
           >
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               {selectedBuilding?.name || 'בחר בניין'}
-              {selectedApartmentId ? ` · דירה ${selectedApartmentId}` : ''}
+              {selectedApartmentId ? ` · ${selectedApartmentId}` : ''}
             </Typography>
 
             <Stack direction="row" spacing={1}>
@@ -269,13 +268,15 @@ function ProjectsSection() {
                 color={getSourceColor(source)}
                 variant={source === 'google-sheets' ? 'filled' : 'outlined'}
               />
-              <Chip
-                size="small"
-                label={`דמו: ${demoMatrixSize.buildings} בניינים · ${demoMatrixSize.apartmentsPerBuilding} דירות · ${demoMatrixSize.trades} תחומים`}
-                variant="outlined"
-              />
             </Stack>
           </Stack>
+
+          {!loading && (!buildings.length || !trades.length) ? (
+            <Alert severity="warning">
+              לא נמצאו נתוני אמת בגיליון.
+              נדרש לפחות בניין, דירה ותחום אחד עם סטטוס.
+            </Alert>
+          ) : null}
 
           <Box>
             <Typography variant="body2" sx={{ mb: 1, fontWeight: 700 }}>
@@ -342,7 +343,7 @@ function ProjectsSection() {
                     color={selected ? 'secondary' : 'inherit'}
                     sx={{ py: 1.1, borderRadius: 2 }}
                   >
-                    {`דירה ${apartment}`}
+                    {apartment}
                   </Button>
                 )
               })}

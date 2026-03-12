@@ -1,13 +1,30 @@
-import {
-  buildingOptions,
-  seedRecords,
-  statusOptions,
-  tradeOptions,
-} from '../data/projectTrackerData'
+import { statusAliases, statusIdToLabel, statusOptions } from '../data/projectTrackerData'
 
-const STORAGE_KEY = 'benson-project-tracker-v3'
+const STORAGE_KEY = 'benson-project-tracker-v4'
 const SHEETS_ENDPOINT = import.meta.env.VITE_SHEETS_API_URL?.trim() || ''
 const validStatuses = new Set(statusOptions.map((status) => status.id))
+
+function normalizeStatus(rawStatus) {
+  if (rawStatus === undefined || rawStatus === null) {
+    return 'not_started'
+  }
+
+  const value = String(rawStatus).trim()
+  if (!value) {
+    return 'not_started'
+  }
+
+  if (validStatuses.has(value)) {
+    return value
+  }
+
+  const normalized = value.replace(/\s+/g, '_')
+  if (statusAliases[normalized]) {
+    return statusAliases[normalized]
+  }
+
+  return 'not_started'
+}
 
 function toRecordKey({ buildingId, apartmentId, tradeId }) {
   return `${buildingId}::${apartmentId}::${tradeId}`
@@ -19,13 +36,19 @@ function sanitizeRecords(records) {
   }
 
   return records
-    .map((record) => ({
-      buildingId: record.buildingId,
-      apartmentId: record.apartmentId,
-      tradeId: record.tradeId,
-      status: validStatuses.has(record.status) ? record.status : 'not_started',
-      updatedAt: record.updatedAt || new Date().toISOString(),
-    }))
+    .map((record) => {
+      const buildingId = String(record?.buildingId ?? '').trim()
+      const apartmentId = String(record?.apartmentId ?? '').trim()
+      const tradeId = String(record?.tradeId ?? '').trim()
+
+      return {
+        buildingId,
+        apartmentId,
+        tradeId,
+        status: normalizeStatus(record?.status),
+        updatedAt: record?.updatedAt || new Date().toISOString(),
+      }
+    })
     .filter((record) => record.buildingId && record.apartmentId && record.tradeId)
 }
 
@@ -36,8 +59,7 @@ function readLocalRecords() {
       return []
     }
 
-    const parsed = JSON.parse(raw)
-    return sanitizeRecords(parsed)
+    return sanitizeRecords(JSON.parse(raw))
   } catch {
     return []
   }
@@ -48,15 +70,44 @@ function writeLocalRecords(records) {
 }
 
 function normalizePayload(payload) {
-  const normalized = {
-    buildingId: payload.buildingId,
-    apartmentId: payload.apartmentId,
-    tradeId: payload.tradeId,
-    status: validStatuses.has(payload.status) ? payload.status : 'not_started',
+  return {
+    buildingId: String(payload?.buildingId ?? '').trim(),
+    apartmentId: String(payload?.apartmentId ?? '').trim(),
+    tradeId: String(payload?.tradeId ?? '').trim(),
+    status: normalizeStatus(payload?.status),
     updatedAt: new Date().toISOString(),
   }
+}
 
-  return normalized
+function sortHebrew(items) {
+  return [...items].sort((a, b) => a.localeCompare(b, 'he'))
+}
+
+function deriveDimensions(records) {
+  const buildingMap = new Map()
+  const tradeSet = new Set()
+
+  records.forEach((record) => {
+    if (!buildingMap.has(record.buildingId)) {
+      buildingMap.set(record.buildingId, new Set())
+    }
+
+    buildingMap.get(record.buildingId).add(record.apartmentId)
+    tradeSet.add(record.tradeId)
+  })
+
+  const buildings = sortHebrew(Array.from(buildingMap.keys())).map((buildingId) => ({
+    id: buildingId,
+    name: buildingId,
+    apartments: sortHebrew(Array.from(buildingMap.get(buildingId))),
+  }))
+
+  const trades = sortHebrew(Array.from(tradeSet)).map((tradeId) => ({
+    id: tradeId,
+    label: tradeId,
+  }))
+
+  return { buildings, trades }
 }
 
 function readApiResponse(data) {
@@ -92,12 +143,21 @@ async function fetchFromSheets() {
 }
 
 async function upsertToSheets(record) {
+  const sheetPayload = {
+    action: 'upsert',
+    buildingId: record.buildingId,
+    apartmentId: record.apartmentId,
+    tradeId: record.tradeId,
+    status: statusIdToLabel[record.status] || record.status,
+    updatedAt: record.updatedAt,
+  }
+
   const response = await fetch(SHEETS_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ action: 'upsert', ...record }),
+    body: JSON.stringify(sheetPayload),
   })
 
   if (!response.ok) {
@@ -114,38 +174,30 @@ async function upsertToSheets(record) {
   }
 }
 
+function buildDataShape(records, source) {
+  const { buildings, trades } = deriveDimensions(records)
+  return {
+    records,
+    source,
+    buildings,
+    trades,
+    statuses: statusOptions,
+  }
+}
+
 export async function fetchTrackerData() {
   const localRecords = readLocalRecords()
 
   if (!SHEETS_ENDPOINT) {
-    return {
-      records: localRecords.length ? localRecords : seedRecords,
-      source: 'local-storage',
-      buildings: buildingOptions,
-      trades: tradeOptions,
-      statuses: statusOptions,
-    }
+    return buildDataShape(localRecords, 'local-storage')
   }
 
   try {
     const records = await fetchFromSheets()
     writeLocalRecords(records)
-
-    return {
-      records,
-      source: 'google-sheets',
-      buildings: buildingOptions,
-      trades: tradeOptions,
-      statuses: statusOptions,
-    }
+    return buildDataShape(records, 'google-sheets')
   } catch {
-    return {
-      records: localRecords.length ? localRecords : seedRecords,
-      source: 'local-storage-fallback',
-      buildings: buildingOptions,
-      trades: tradeOptions,
-      statuses: statusOptions,
-    }
+    return buildDataShape(localRecords, 'local-storage-fallback')
   }
 }
 
